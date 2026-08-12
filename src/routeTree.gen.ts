@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PluginsRouteImport } from './routes/plugins'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PluginsRoute = PluginsRouteImport.update({
@@ -45,6 +51,7 @@ const ApiPublicTelegramWebhookRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/plugins': typeof PluginsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/plugins': typeof PluginsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -60,6 +68,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/groups': typeof GroupsRoute
   '/plugins': typeof PluginsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -67,13 +76,25 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/plugins' | '/users' | '/api/public/telegram/webhook'
+    | '/'
+    | '/auth'
+    | '/groups'
+    | '/plugins'
+    | '/users'
+    | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/plugins' | '/users' | '/api/public/telegram/webhook'
+  to:
+    | '/'
+    | '/auth'
+    | '/groups'
+    | '/plugins'
+    | '/users'
+    | '/api/public/telegram/webhook'
   id:
     | '__root__'
     | '/'
     | '/auth'
+    | '/groups'
     | '/plugins'
     | '/users'
     | '/api/public/telegram/webhook'
@@ -82,6 +103,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  GroupsRoute: typeof GroupsRoute
   PluginsRoute: typeof PluginsRoute
   UsersRoute: typeof UsersRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
@@ -101,6 +123,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plugins': {
@@ -130,6 +159,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  GroupsRoute: GroupsRoute,
   PluginsRoute: PluginsRoute,
   UsersRoute: UsersRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
