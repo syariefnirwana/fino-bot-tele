@@ -81,7 +81,10 @@ function PluginsPage() {
 
   async function toggle(p: Plugin, enabled: boolean) {
     const { error } = await supabase.from("plugins").update({ enabled }).eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(`${p.name} ${enabled ? "enabled" : "disabled"}`);
     qc.invalidateQueries({ queryKey: ["plugins"] });
   }
@@ -211,7 +214,10 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
       ? await supabase.from("plugins").update(payload).eq("id", plugin.id)
       : await supabase.from("plugins").insert(payload);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(plugin ? "Plugin updated" : "Plugin created");
     onDone();
   }
