@@ -70,8 +70,8 @@ function UsersPage() {
     );
   });
 
-  async function update(id: string, patch: Record<string, unknown>, label: string) {
-    const { error } = await supabase.from("telegram_users").update(patch).eq("id", id);
+  async function update(id: string, patch: { role?: string; banned?: boolean }, label: string) {
+    const { error } = await supabase.from("telegram_users").update(patch as never).eq("id", id);
     if (error) {
       toast.error(error.message);
       return;
