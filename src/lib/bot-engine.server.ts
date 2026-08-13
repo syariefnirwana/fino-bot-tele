@@ -90,6 +90,45 @@ export const handlers: Record<string, Handler> = {
     return `🎲 ${rolls.join(" + ")} = *${rolls.reduce((a, b) => a + b, 0)}*`;
   },
 
+  /**
+   * EXAMPLE PLUGIN 1 — pure logic, no external service.
+   * Row in `plugins`: key = "calc", commands = ["/calc"].
+   */
+  calc: async (ctx) => {
+    const expr = ctx.args.trim();
+    if (!expr) return "Usage: /calc 12 * (3 + 4)";
+    if (!/^[0-9+\-*/%.() ]+$/.test(expr)) return "Only numbers and + - * / % ( ) are allowed.";
+    try {
+      // eslint-disable-next-line no-new-func
+      const value = Function(`"use strict";return (${expr})`)() as unknown;
+      if (typeof value !== "number" || !Number.isFinite(value)) return "That is not a valid expression.";
+      return `\`${expr}\` = *${value}*`;
+    } catch {
+      return "Could not parse that expression.";
+    }
+  },
+
+  /**
+   * EXAMPLE PLUGIN 2 — external API + per-plugin config.
+   * Reads `config.default_city` from the plugin row, so the operator can
+   * change behaviour from the dashboard without touching code.
+   */
+  weather: async (ctx) => {
+    const row = ctx.plugins.find((p) => p.key === "weather");
+    const city = ctx.args.trim() || String(row?.config?.["default_city"] ?? "Jakarta");
+    const geo = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?count=1&name=${encodeURIComponent(city)}`,
+    ).then((r) => r.json() as Promise<any>);
+    const place = geo?.results?.[0];
+    if (!place) return `Could not find *${city}*.`;
+    const wx = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,wind_speed_10m`,
+    ).then((r) => r.json() as Promise<any>);
+    const cur = wx?.current;
+    if (!cur) return "Weather service is unavailable right now.";
+    return `*${place.name}, ${place.country}*\ntemp: ${cur.temperature_2m}°C\nwind: ${cur.wind_speed_10m} km/h`;
+  },
+
   stats: async () => {
     const [users, groups, logs, plugins] = await Promise.all([
       supabaseAdmin.from("telegram_users").select("id", { count: "exact", head: true }),
