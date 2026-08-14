@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { testPluginCode } from "@/lib/plugin-code.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +58,18 @@ type Plugin = {
   dependencies: string[];
   is_core: boolean;
   usage_count: number;
+  code: string | null;
+  code_updated_at: string | null;
 };
+
+const CODE_TEMPLATE = `// Plugin code runs on the server for every matching command.
+// Available: ctx, fetchJson, fetchText, evaluate, env, console
+// ctx = { args, command, role, chatId, chatType, chatTitle, telegramId, from, config, plugins }
+// Return the reply text (Telegram Markdown).
+
+const name = ctx.args.trim() || ctx.from.first_name || "there";
+return "Hello *" + name + "*!";
+`;
 
 const CATEGORIES = ["core", "utility", "group", "moderation", "fun", "ai", "media", "admin", "economy"];
 const ROLES = ["user", "developer", "moderator", "admin", "owner"];
@@ -137,6 +150,11 @@ function PluginsPage() {
                       core
                     </Badge>
                   ) : null}
+                  {p.code?.trim() ? (
+                    <Badge variant="outline" className="border-primary/50 text-[10px] uppercase text-primary">
+                      code
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-1 font-mono text-xs text-primary">{p.commands.join("  ")}</p>
               </div>
@@ -189,8 +207,30 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
     scope: plugin?.scope ?? "all",
     required_role: plugin?.required_role ?? "user",
     dependencies: (plugin?.dependencies ?? []).join(", "),
+    code: plugin?.code ?? (plugin ? "" : CODE_TEMPLATE),
   });
   const [busy, setBusy] = useState(false);
+  const [testArgs, setTestArgs] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; output: string; ms: number } | null>(null);
+  const runTest = useServerFn(testPluginCode);
+
+  async function test() {
+    setTesting(true);
+    try {
+      const res = await runTest({
+        data: { code: form.code, args: testArgs, pluginKey: form.key.trim() },
+      });
+      setResult(res);
+    } catch (error) {
+      setResult({
+        ok: false,
+        output: error instanceof Error ? error.message : "Test failed",
+        ms: 0,
+      });
+    }
+    setTesting(false);
+  }
 
   async function save() {
     setBusy(true);
@@ -209,6 +249,8 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean),
+      code: form.code,
+      code_updated_at: form.code.trim() ? new Date().toISOString() : null,
     };
     const { error } = plugin
       ? await supabase.from("plugins").update(payload).eq("id", plugin.id)
@@ -223,7 +265,7 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
   }
 
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{plugin ? `Configure ${plugin.name}` : "New plugin"}</DialogTitle>
       </DialogHeader>
@@ -315,12 +357,54 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
             onChange={(e) => setForm({ ...form, dependencies: e.target.value })}
           />
         </div>
-        {!plugin ? (
-          <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
-            A new plugin row is registered but stays in "no runtime handler" state until a handler
-            with the same key exists in the bot engine.
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label>Plugin code (JavaScript)</Label>
+            <span className="font-mono text-[11px] text-muted-foreground">
+              ctx · fetchJson · fetchText · evaluate · env
+            </span>
+          </div>
+          <Textarea
+            value={form.code}
+            spellCheck={false}
+            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            className="min-h-[280px] font-mono text-xs leading-relaxed"
+            placeholder={CODE_TEMPLATE}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Runs on the server for every matching command. Return the reply text. Leave empty to use
+            the built-in handler with the same key (if any).
           </p>
-        ) : null}
+        </div>
+
+        <div className="rounded-md border border-border p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[180px] flex-1 space-y-1.5">
+              <Label>Test arguments</Label>
+              <Input
+                value={testArgs}
+                onChange={(e) => setTestArgs(e.target.value)}
+                placeholder="text after the command"
+              />
+            </div>
+            <Button variant="outline" onClick={test} disabled={testing || !form.code.trim()}>
+              {testing ? "Running…" : "Run test"}
+            </Button>
+          </div>
+          {result ? (
+            <pre
+              className={`mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 font-mono text-xs ${
+                result.ok
+                  ? "border-primary/40 bg-primary/5 text-foreground"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}
+            >
+              {result.output || "(empty reply)"}
+              {"\n\n"}
+              {result.ok ? "✓" : "✗"} {result.ms}ms
+            </pre>
+          ) : null}
+        </div>
       </div>
       <DialogFooter>
         <Button onClick={save} disabled={busy || !form.key || !form.name}>

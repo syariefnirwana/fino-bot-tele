@@ -156,11 +156,12 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return new Response("ok");
         }
 
+        const source = (plugin.code ?? "").trim();
         const handler = engine.handlers[plugin.key];
-        if (!handler) {
+        if (!source && !handler) {
           await engine.sendMessage(
             chatId,
-            `Plugin *${plugin.name}* is registered but has no runtime handler yet.`,
+            `Plugin *${plugin.name}* has no code yet. Add it from the dashboard.`,
             token,
           );
           await engine.log({
@@ -176,18 +177,36 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
 
         try {
-          const reply = await handler({
-            chatId,
-            chatType: chat.type,
-            chatTitle: chat.title ?? null,
-            telegramId,
-            role,
-            args,
-            command,
-            plugins,
-            receivedAt,
-            from,
-          });
+          const reply = source
+            ? await (await import("@/lib/plugin-runtime.server")).runPluginCode(source, {
+                args,
+                command,
+                role,
+                chatId,
+                chatType: chat.type,
+                chatTitle: chat.title ?? null,
+                telegramId,
+                from,
+                config: (plugin.config ?? {}) as Record<string, unknown>,
+                plugins: plugins.map((p) => ({
+                  key: p.key,
+                  name: p.name,
+                  commands: p.commands,
+                  enabled: p.enabled,
+                })),
+              })
+            : await handler!({
+                chatId,
+                chatType: chat.type,
+                chatTitle: chat.title ?? null,
+                telegramId,
+                role,
+                args,
+                command,
+                plugins,
+                receivedAt,
+                from,
+              });
           await engine.sendMessage(chatId, reply, token);
           await supabaseAdmin
             .from("plugins")
