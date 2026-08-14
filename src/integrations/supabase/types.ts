@@ -167,6 +167,8 @@ export type Database = {
       plugins: {
         Row: {
           category: string
+          code: string
+          code_updated_at: string | null
           commands: string[]
           config: Json
           created_at: string
@@ -184,6 +186,8 @@ export type Database = {
         }
         Insert: {
           category?: string
+          code?: string
+          code_updated_at?: string | null
           commands?: string[]
           config?: Json
           created_at?: string
@@ -201,6 +205,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          code?: string
+          code_updated_at?: string | null
           commands?: string[]
           config?: Json
           created_at?: string
