@@ -150,6 +150,11 @@ function PluginsPage() {
                       core
                     </Badge>
                   ) : null}
+                  {p.code?.trim() ? (
+                    <Badge variant="outline" className="border-primary/50 text-[10px] uppercase text-primary">
+                      code
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-1 font-mono text-xs text-primary">{p.commands.join("  ")}</p>
               </div>
