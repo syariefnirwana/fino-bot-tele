@@ -202,8 +202,30 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
     scope: plugin?.scope ?? "all",
     required_role: plugin?.required_role ?? "user",
     dependencies: (plugin?.dependencies ?? []).join(", "),
+    code: plugin?.code ?? (plugin ? "" : CODE_TEMPLATE),
   });
   const [busy, setBusy] = useState(false);
+  const [testArgs, setTestArgs] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; output: string; ms: number } | null>(null);
+  const runTest = useServerFn(testPluginCode);
+
+  async function test() {
+    setTesting(true);
+    try {
+      const res = await runTest({
+        data: { code: form.code, args: testArgs, pluginKey: form.key.trim() },
+      });
+      setResult(res);
+    } catch (error) {
+      setResult({
+        ok: false,
+        output: error instanceof Error ? error.message : "Test failed",
+        ms: 0,
+      });
+    }
+    setTesting(false);
+  }
 
   async function save() {
     setBusy(true);
