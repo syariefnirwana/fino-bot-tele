@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { testPluginCode } from "@/lib/plugin-code.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +58,18 @@ type Plugin = {
   dependencies: string[];
   is_core: boolean;
   usage_count: number;
+  code: string | null;
+  code_updated_at: string | null;
 };
+
+const CODE_TEMPLATE = `// Plugin code runs on the server for every matching command.
+// Available: ctx, fetchJson, fetchText, evaluate, env, console
+// ctx = { args, command, role, chatId, chatType, chatTitle, telegramId, from, config, plugins }
+// Return the reply text (Telegram Markdown).
+
+const name = ctx.args.trim() || ctx.from.first_name || "there";
+return "Hello *" + name + "*!";
+`;
 
 const CATEGORIES = ["core", "utility", "group", "moderation", "fun", "ai", "media", "admin", "economy"];
 const ROLES = ["user", "developer", "moderator", "admin", "owner"];
