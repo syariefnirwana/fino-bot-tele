@@ -244,6 +244,8 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean),
+      code: form.code,
+      code_updated_at: form.code.trim() ? new Date().toISOString() : null,
     };
     const { error } = plugin
       ? await supabase.from("plugins").update(payload).eq("id", plugin.id)
@@ -258,7 +260,7 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
   }
 
   return (
-    <DialogContent className="max-w-lg">
+    <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{plugin ? `Configure ${plugin.name}` : "New plugin"}</DialogTitle>
       </DialogHeader>
