@@ -352,12 +352,54 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
             onChange={(e) => setForm({ ...form, dependencies: e.target.value })}
           />
         </div>
-        {!plugin ? (
-          <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
-            A new plugin row is registered but stays in "no runtime handler" state until a handler
-            with the same key exists in the bot engine.
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label>Plugin code (JavaScript)</Label>
+            <span className="font-mono text-[11px] text-muted-foreground">
+              ctx · fetchJson · fetchText · evaluate · env
+            </span>
+          </div>
+          <Textarea
+            value={form.code}
+            spellCheck={false}
+            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            className="min-h-[280px] font-mono text-xs leading-relaxed"
+            placeholder={CODE_TEMPLATE}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Runs on the server for every matching command. Return the reply text. Leave empty to use
+            the built-in handler with the same key (if any).
           </p>
-        ) : null}
+        </div>
+
+        <div className="rounded-md border border-border p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="min-w-[180px] flex-1 space-y-1.5">
+              <Label>Test arguments</Label>
+              <Input
+                value={testArgs}
+                onChange={(e) => setTestArgs(e.target.value)}
+                placeholder="text after the command"
+              />
+            </div>
+            <Button variant="outline" onClick={test} disabled={testing || !form.code.trim()}>
+              {testing ? "Running…" : "Run test"}
+            </Button>
+          </div>
+          {result ? (
+            <pre
+              className={`mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 font-mono text-xs ${
+                result.ok
+                  ? "border-primary/40 bg-primary/5 text-foreground"
+                  : "border-destructive/40 bg-destructive/10 text-destructive"
+              }`}
+            >
+              {result.output || "(empty reply)"}
+              {"\n\n"}
+              {result.ok ? "✓" : "✗"} {result.ms}ms
+            </pre>
+          ) : null}
+        </div>
       </div>
       <DialogFooter>
         <Button onClick={save} disabled={busy || !form.key || !form.name}>
