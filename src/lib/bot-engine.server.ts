@@ -29,6 +29,8 @@ export type PluginRow = {
   required_role: Role;
   config: Record<string, unknown>;
   dependencies: string[];
+  /** Dashboard-authored source. When non-empty it takes priority over built-in handlers. */
+  code?: string | null;
 };
 
 export type BotContext = {
