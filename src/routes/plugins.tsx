@@ -358,24 +358,53 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
           />
         </div>
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Label>Plugin code (JavaScript)</Label>
             <span className="font-mono text-[11px] text-muted-foreground">
               ctx · fetchJson · fetchText · evaluate · env
             </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] uppercase text-muted-foreground">Template</span>
+            {PLUGIN_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                title={t.description}
+                onClick={() => {
+                  if (
+                    form.code.trim() &&
+                    !window.confirm("Replace the current code with the " + t.label + " template?")
+                  )
+                    return;
+                  setForm({ ...form, code: t.code });
+                }}
+                className="rounded-full border border-border px-2.5 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
           <Textarea
             value={form.code}
             spellCheck={false}
             onChange={(e) => setForm({ ...form, code: e.target.value })}
             className="min-h-[280px] font-mono text-xs leading-relaxed"
-            placeholder={CODE_TEMPLATE}
+            placeholder={PLUGIN_TEMPLATES[0].code}
           />
           <p className="text-[11px] text-muted-foreground">
             Runs on the server for every matching command. Return the reply text. Leave empty to use
             the built-in handler with the same key (if any).
           </p>
         </div>
+
+        {plugin ? (
+          <PluginHistory
+            pluginId={plugin.id}
+            onRestore={(code) => setForm((f) => ({ ...f, code }))}
+          />
+        ) : null}
+
 
         <div className="rounded-md border border-border p-3">
           <div className="flex flex-wrap items-end gap-2">
