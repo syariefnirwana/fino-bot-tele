@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { testPluginCode } from "@/lib/plugin-code.functions";
+import { PLUGIN_TEMPLATES } from "@/lib/plugin-templates";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
