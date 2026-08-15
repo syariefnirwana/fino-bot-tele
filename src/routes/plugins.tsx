@@ -392,7 +392,7 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
             spellCheck={false}
             onChange={(e) => setForm({ ...form, code: e.target.value })}
             className="min-h-[280px] font-mono text-xs leading-relaxed"
-            placeholder={PLUGIN_TEMPLATES[0].code}
+            placeholder={CODE_TEMPLATE}
           />
           <p className="text-[11px] text-muted-foreground">
             Runs on the server for every matching command. Return the reply text. Leave empty to use
