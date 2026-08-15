@@ -445,3 +445,106 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
     </DialogContent>
   );
 }
+
+type PluginVersion = {
+  id: string;
+  version: number;
+  code: string;
+  commands: string[];
+  note: string | null;
+  created_at: string;
+};
+
+function PluginHistory({
+  pluginId,
+  onRestore,
+}: {
+  pluginId: string;
+  onRestore: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["plugin-versions", pluginId],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plugin_versions")
+        .select("id, version, code, commands, note, created_at")
+        .eq("plugin_id", pluginId)
+        .order("version", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as unknown as PluginVersion[];
+    },
+  });
+
+  const versions = data ?? [];
+
+  return (
+    <div className="rounded-md border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <Label>Version history</Label>
+          <p className="text-[11px] text-muted-foreground">
+            A snapshot is saved automatically every time the code or commands change.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)}>
+          {open ? "Hide" : "Show history"}
+        </Button>
+      </div>
+
+      {open ? (
+        <div className="mt-3 space-y-2">
+          {isLoading ? (
+            <p className="font-mono text-xs text-muted-foreground">Loading…</p>
+          ) : versions.length === 0 ? (
+            <p className="font-mono text-xs text-muted-foreground">No versions yet.</p>
+          ) : (
+            versions.map((v) => (
+              <div key={v.id} className="rounded-md border border-border/70 p-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-mono text-xs">
+                    <span className="text-primary">v{v.version}</span>{" "}
+                    <span className="text-muted-foreground">
+                      {new Date(v.created_at).toLocaleString()}
+                    </span>
+                    {v.note ? (
+                      <span className="ml-2 text-muted-foreground">· {v.note}</span>
+                    ) : null}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPreview(preview === v.id ? null : v.id)}
+                    >
+                      {preview === v.id ? "Hide code" : "Preview"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onRestore(v.code);
+                        toast.success(`Restored v${v.version} into the editor — press Save to apply`);
+                      }}
+                    >
+                      Restore
+                    </Button>
+                  </div>
+                </div>
+                {preview === v.id ? (
+                  <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 font-mono text-[11px] leading-relaxed">
+                    {v.code || "(empty)"}
+                  </pre>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
