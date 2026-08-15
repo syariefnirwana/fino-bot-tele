@@ -15,6 +15,7 @@ import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as PluginsRouteImport } from './routes/plugins'
 import { Route as ProvidersRouteImport } from './routes/providers'
+import { Route as ReadmeRouteImport } from './routes/readme'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
@@ -49,6 +50,11 @@ const ProvidersRoute = ProvidersRouteImport.update({
   path: '/providers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReadmeRoute = ReadmeRouteImport.update({
+  id: '/readme',
+  path: '/readme',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/logs': typeof LogsRoute
   '/plugins': typeof PluginsRoute
   '/providers': typeof ProvidersRoute
+  '/readme': typeof ReadmeRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/logs': typeof LogsRoute
   '/plugins': typeof PluginsRoute
   '/providers': typeof ProvidersRoute
+  '/readme': typeof ReadmeRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/logs': typeof LogsRoute
   '/plugins': typeof PluginsRoute
   '/providers': typeof ProvidersRoute
+  '/readme': typeof ReadmeRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/logs'
     | '/plugins'
     | '/providers'
+    | '/readme'
     | '/settings'
     | '/users'
     | '/api/public/telegram/webhook'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/logs'
     | '/plugins'
     | '/providers'
+    | '/readme'
     | '/settings'
     | '/users'
     | '/api/public/telegram/webhook'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/logs'
     | '/plugins'
     | '/providers'
+    | '/readme'
     | '/settings'
     | '/users'
     | '/api/public/telegram/webhook'
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   LogsRoute: typeof LogsRoute
   PluginsRoute: typeof PluginsRoute
   ProvidersRoute: typeof ProvidersRoute
+  ReadmeRoute: typeof ReadmeRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProvidersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/readme': {
+      id: '/readme'
+      path: '/readme'
+      fullPath: '/readme'
+      preLoaderRoute: typeof ReadmeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   LogsRoute: LogsRoute,
   PluginsRoute: PluginsRoute,
   ProvidersRoute: ProvidersRoute,
+  ReadmeRoute: ReadmeRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,

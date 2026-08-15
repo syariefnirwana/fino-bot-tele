@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Bot,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,8 +26,10 @@ const NAV = [
   { to: "/groups", label: "Groups", icon: MessagesSquare },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/providers", label: "Providers", icon: Plug },
+  { to: "/readme", label: "Readme", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
+
 
 export function AppShell({
   title,
