@@ -164,6 +164,50 @@ export type Database = {
         }
         Relationships: []
       }
+      plugin_versions: {
+        Row: {
+          code: string
+          commands: string[]
+          config: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          plugin_id: string
+          version: number
+        }
+        Insert: {
+          code?: string
+          commands?: string[]
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          plugin_id: string
+          version: number
+        }
+        Update: {
+          code?: string
+          commands?: string[]
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          plugin_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plugin_versions_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "plugins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plugins: {
         Row: {
           category: string
