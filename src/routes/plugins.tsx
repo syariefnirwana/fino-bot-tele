@@ -236,6 +236,25 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
 
   async function save() {
     setBusy(true);
+    if (form.code.trim()) {
+      try {
+        const check = await validate({ data: { code: form.code } });
+        if (!check.ok) {
+          setBusy(false);
+          setResult({ ok: false, output: `Syntax error: ${check.error}`, ms: 0 });
+          toast.error("Plugin code has a syntax error — fix it before saving.");
+          return;
+        }
+        if (check.warnings.length) {
+          setResult({ ok: false, output: check.warnings.map((w) => `⚠ ${w}`).join("\n"), ms: 0 });
+          toast.warning(check.warnings[0]!);
+        }
+      } catch (error) {
+        setBusy(false);
+        toast.error(error instanceof Error ? error.message : "Validation failed");
+        return;
+      }
+    }
     const payload = {
       key: form.key.trim(),
       name: form.name.trim(),
