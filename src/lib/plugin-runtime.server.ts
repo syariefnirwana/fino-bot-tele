@@ -14,11 +14,12 @@
  *
  * Return a string: that becomes the Telegram reply (Markdown).
  *
- * Execution strategy: native AsyncFunction first (full modern JS). Some
- * serverless runtimes forbid dynamic code generation; in that case we fall
- * back to the bundled ES5 interpreter (no async/await — use .then()).
+ * Execution strategy: native AsyncFunction first (fast path in Node/dev). The
+ * production Worker forbids dynamic code generation, so we fall back to the
+ * bundled `sval` interpreter, which supports modern syntax (const/let, arrow
+ * functions, async/await, spread, optional chaining, nullish coalescing).
  */
-import { Interpreter } from "eval5";
+import Sval from "sval";
 
 export type PluginSandboxCtx = {
   args: string;
