@@ -120,6 +120,55 @@ function buildSandbox(ctx: PluginSandboxCtx) {
   } as Record<string, unknown>;
 }
 
+function isDynamicCodeBlocked(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return error instanceof EvalError || /code generation|disallowed|unsafe-eval/i.test(message);
+}
+
+/** Builds an interpreted runner for the given code (no eval / new Function). */
+function interpret(code: string, sandbox: Record<string, unknown>) {
+  const interpreter = new Sval({ ecmaVer: "latest", sandBox: true });
+  interpreter.import(sandbox);
+  interpreter.run(`exports.__run = async function () {\n${code}\n};`);
+  return (interpreter.exports as { __run: () => Promise<unknown> }).__run;
+}
+
+/**
+ * Compiles plugin code without running it. Throws a syntax error when the
+ * code cannot be parsed, so the dashboard can validate before saving.
+ */
+export function compilePluginCode(code: string): void {
+  const sandbox = buildSandbox({
+    args: "",
+    command: "/test",
+    role: "owner",
+    chatId: 0,
+    chatType: "private",
+    chatTitle: null,
+    telegramId: 0,
+    from: {},
+    config: {},
+    plugins: [],
+  });
+  interpret(code, sandbox);
+}
+
+/** Static checks that catch the most common plugin mistakes before saving. */
+export function lintPluginCode(code: string): string[] {
+  const warnings: string[] = [];
+  const source = code.trim();
+  if (!source) return ["The code is empty — the bot will reply with nothing."];
+  if (!/\breturn\b/.test(source)) warnings.push("No `return` found — the bot will reply with nothing.");
+  if (/\b(require|import)\s*\(/.test(source))
+    warnings.push("`require()` / dynamic `import()` are not available in the sandbox.");
+  if (/^\s*import\s+/m.test(source)) warnings.push("`import` statements are not supported — use the provided helpers.");
+  if (/\bprocess\.env\b/.test(source)) warnings.push("Use `env(\"NAME\")` instead of `process.env`.");
+  if (/\b(window|document|localStorage)\b/.test(source))
+    warnings.push("Browser globals are not available — plugin code runs on the server.");
+  if (/\bsetInterval\s*\(/.test(source)) warnings.push("`setInterval` will never be cleaned up — avoid it.");
+  return warnings;
+}
+
 /** Runs dashboard-authored plugin code and returns the reply text. */
 export async function runPluginCode(code: string, ctx: PluginSandboxCtx): Promise<string> {
   const sandbox = buildSandbox(ctx);
@@ -127,23 +176,20 @@ export async function runPluginCode(code: string, ctx: PluginSandboxCtx): Promis
   const values = names.map((n) => sandbox[n]);
 
   let result: unknown;
+  let run: (() => Promise<unknown>) | null = null;
   try {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (
       ...args: string[]
     ) => (...args: unknown[]) => Promise<unknown>;
     const fn = new AsyncFunction(...names, code);
-    result = await fn(...values);
+    run = () => fn(...values);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const dynamicCodeBlocked =
-      error instanceof EvalError || /code generation|disallowed|unsafe-eval/i.test(message);
-    if (!dynamicCodeBlocked) throw error;
-
-    // Fallback: ES5 interpreter (no async/await — return a Promise via .then()).
-    const interpreter = new Interpreter(sandbox, { timeout: 8000 });
-    result = interpreter.evaluate(`(function(){${code}})()`);
-    result = await result;
+    if (!isDynamicCodeBlocked(error)) throw error;
+    // Fallback: interpreted execution (modern syntax supported, no eval).
+    run = interpret(code, sandbox);
   }
+
+  result = await run();
 
   if (result === undefined || result === null) return "";
   return typeof result === "string" ? result : JSON.stringify(result);
