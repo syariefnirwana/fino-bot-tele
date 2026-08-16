@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { testPluginCode } from "@/lib/plugin-code.functions";
+import { testPluginCode, validatePluginCode } from "@/lib/plugin-code.functions";
 import { PLUGIN_TEMPLATES } from "@/lib/plugin-templates";
 
 import { useState } from "react";
@@ -216,6 +216,7 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; output: string; ms: number } | null>(null);
   const runTest = useServerFn(testPluginCode);
+  const validate = useServerFn(validatePluginCode);
 
   async function test() {
     setTesting(true);
@@ -236,6 +237,25 @@ function PluginDialog({ plugin, onDone }: { plugin?: Plugin; onDone: () => void 
 
   async function save() {
     setBusy(true);
+    if (form.code.trim()) {
+      try {
+        const check = await validate({ data: { code: form.code } });
+        if (!check.ok) {
+          setBusy(false);
+          setResult({ ok: false, output: `Syntax error: ${check.error}`, ms: 0 });
+          toast.error("Plugin code has a syntax error — fix it before saving.");
+          return;
+        }
+        if (check.warnings.length) {
+          setResult({ ok: false, output: check.warnings.map((w: string) => `⚠ ${w}`).join("\n"), ms: 0 });
+          toast.warning(check.warnings[0]!);
+        }
+      } catch (error) {
+        setBusy(false);
+        toast.error(error instanceof Error ? error.message : "Validation failed");
+        return;
+      }
+    }
     const payload = {
       key: form.key.trim(),
       name: form.name.trim(),

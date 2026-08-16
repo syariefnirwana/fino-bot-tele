@@ -52,3 +52,24 @@ export const testPluginCode = createServerFn({ method: "POST" })
       };
     }
   });
+
+/** Compiles + lints plugin code before saving. Staff only. */
+export const validatePluginCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { code: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { compilePluginCode, lintPluginCode } = await import("@/lib/plugin-runtime.server");
+    try {
+      compilePluginCode(data.code);
+    } catch (error) {
+      return {
+        ok: false as const,
+        error: error instanceof Error ? error.message : String(error),
+        warnings: [] as string[],
+      };
+    }
+    return { ok: true as const, error: "", warnings: lintPluginCode(data.code) };
+  });
